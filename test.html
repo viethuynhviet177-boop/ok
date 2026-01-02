@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cloud Gaming Demo</title>
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #020617;
+  color: #fff;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  border-bottom: 1px solid #1e293b;
+}
+header h1 { font-size: 24px; font-weight: bold; }
+header h1 span { font-weight: normal; color: #aaa; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.search {
+  background: #111827;
+  border: 1px solid #333;
+  padding: 10px 16px;
+  border-radius: 12px;
+  color: #fff;
+  width: 220px;
+}
+.search:focus { outline: none; border-color: #fff; }
+.account { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.account img { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #fff; }
+
+/* FEATURED */
+.featured {
+  margin: 30px 40px;
+  padding: 50px 40px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 0.8s ease-out;
+}
+.featured.visible { opacity: 1; transform: translateY(0); }
+
+.featured h2 { font-size: 36px; margin-bottom: 10px; }
+.featured p { font-size: 16px; color: #bbb; }
+.status { margin-top: 12px; font-size: 14px; color: #22c55e; font-weight: bold; }
+.featured button {
+  margin-top: 20px;
+  padding: 12px 28px;
+  border-radius: 12px;
+  border: none;
+  background: #333;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+.featured button:hover { background: #555; }
+
+/* GENRES / CATEGORIES */
+.categories {
+  display: flex;
+  gap: 12px;
+  padding: 20px 40px;
+  position: relative;
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 0.8s ease-out;
+}
+.categories.visible { opacity: 1; transform: translateY(0); }
+
+.category {
+  padding: 10px 20px;
+  background: #333;
+  color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.category:hover { background: #111827; }
+.underline {
+  position: absolute;
+  bottom: 0;
+  height: 3px;
+  background: #fff;
+  border-radius: 2px;
+  transition: 0.3s;
+}
+
+/* GAMES GRID */
+section { margin: 0 40px 40px; opacity: 0; transform: translateY(50px); transition: all 0.8s ease-out; }
+section.visible { opacity: 1; transform: translateY(0); }
+section h3 { margin-bottom: 20px; font-weight: 600; }
+.games { display: grid; grid-template-columns: repeat(auto-fill,minmax(170px,1fr)); gap: 20px; }
+
+.game {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #111827;
+  transition: transform 0.3s, box-shadow 0.3s;
+  opacity: 0;
+  transform: translateY(50px);
+}
+.game.visible { opacity: 1; transform: translateY(0); }
+.game:hover { transform: scale(1.05); box-shadow: 0 0 20px #fff; }
+.game img { width: 100%; height: 220px; object-fit: cover; transition: 0.3s; }
+.game:hover img { filter: brightness(0.6); }
+
+/* OVERLAY WITH BUTTON */
+.game-info {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: rgba(0,0,0,0.7);
+  padding: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;                   
+  transform: translateY(100%);   
+  transition: opacity 0.3s, transform 0.3s;
+}
+.game:hover .game-info {
+  opacity: 1;
+  transform: translateY(0);     
+}
+.game-info h4 { margin: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.game-info button {
+  width: 100%;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: none;
+  background: #fff;
+  color: #020617;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+}
+.game-info button:hover { background: #ccc; }
+
+/* LOADER */
+#loader-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(2,6,23,0.95);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  z-index: 9999;
+  text-align: center;
+}
+.spinner {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.dot { width: 12px; height: 12px; background: #fff; border-radius: 50%; animation: bounce 1.2s infinite; }
+.dot:nth-child(2){ animation-delay: 0.2s; }
+.dot:nth-child(3){ animation-delay: 0.4s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(0);} 40%{transform:scale(1);} }
+
+.note { text-align: center; font-size: 12px; color: #64748b; padding: 30px; }
+
+@media(max-width:600px){
+  .featured{ padding:30px 20px; }
+  .search{ width:150px; }
+  .games{ grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap:15px; }
+  .categories{ flex-wrap: wrap; gap:8px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>☁️ Cloud Gaming <span>Demo</span></h1>
+  <div class="header-right">
+    <input class="search" placeholder="Search games..." />
+    <div class="account">
+      <img src="https://cdn.pfps.gg/pfps/7702-egirl.jpeg" alt="Avatar">
+      <span>Guest</span>
+    </div>
+  </div>
+</header>
+
+<div class="featured">
+  <h2>Featured: Multiplayer-Games</h2>
+  <p>Jump straight into the action. No downloads required.</p>
+  <div class="status">🔓 Can play — subscription is activated</div>
+  <button>💳 Buy a Subscription</button>
+</div>
+
+<!-- GENRES -->
+<div class="categories">
+  <div class="category">None</div>
+  <div class="category">Action</div>
+  <div class="category">RPG</div>
+  <div class="category">Multiplayer</div>
+  <div class="category">Open World</div>
+  <div class="category">Racing</div>
+  <div class="underline"></div>
+</div>
+
+<section>
+  <h3>All Games</h3>
+  <div class="games">
+    <div class="game">
+      <img src="https://media.rockstargames.com/rockstargames/img/global/news/upload/actual_1364906194.jpg">
+      <div class="game-info">
+        <h4>GTA V</h4>
+        <button onclick="startQueue('GTA V')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://data.xxlgamer.com/products/4763/h59eOYMZPs4xkh-big.jpg">
+      <div class="game-info">
+        <h4>Red Dead Redemption 2</h4>
+        <button onclick="startQueue('RDR2')">▶ Play</button>
+      </div>
+    </div>
+
+    <div class="game">
+      <img src="https://data.xxlgamer.com/products/4841/J2bwzM9CBunxjw-big.jpg">
+      <div class="game-info">
+        <h4>Cyberpunk 2077</h4>
+        <button onclick="startQueue('Cyberpunk 2077')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/1db690cd3f6a48ea88dfca9fc7a579d1.png">
+      <div class="game-info">
+        <h4>GTA 4</h4>
+        <button onclick="startQueue('GTA 4')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/0209d5c5724d1266354879fed2fe251a/9741161">
+      <div class="game-info">
+        <h4>The Witcher 3</h4>
+        <button onclick="startQueue('The Witcher 3')">▶ Play</button>
+      </div>
+    </div>
+    
+<div class="game">
+      <img src="https://e.snmc.io/lk/f/x/0e388c862edecd3b50efa40fb7c03cac/9313895">
+      <div class="game-info">
+        <h4>Dying Light 1</h4>
+        <button onclick="startQueue('Dying Light 1')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/53599f991d86a4bdd5983195d9aa5655/9051610">
+      <div class="game-info">
+        <h4>Dying Light 2</h4>
+        <button onclick="startQueue('Dying Light 2')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://e.snmc.io/lk/l/x/d4d99ced18eb2ecc902d24b255a5a1d8/13748822">
+      <div class="game-info">
+        <h4>Dying Light The Beast</h4>
+        <button onclick="startQueue('Dying Light The Beast')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://e.snmc.io/lk/g/x/f5fdd61c360cce2edaa03ffdf27f2708/12175128">
+      <div class="game-info">
+        <h4>Silent Hill 2 (Remake)</h4>
+        <button onclick="startQueue('Silent Hill 2')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BNDFhYjRjMzQtNDQxMC00ODMyLWJjZmItOTM1MWVhYjRmZTA5XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Resident Evil 2</h4>
+        <button onclick="startQueue('Resident Evil 2')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/d/df/Resident_Evil_4_remake_cover_art.jpg">
+      <div class="game-info">
+        <h4>Resident Evil 4</h4>
+        <button onclick="startQueue('Resident Evil 4')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/5ffd93f895e175708e1dd1c432f15d61/10804192">
+      <div class="game-info">
+        <h4>Resident Evil 3</h4>
+        <button onclick="startQueue('Resident Evil 3')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BMjdmZTNkOTYtNjU0NC00M2RkLTlkZjYtMGIxYmRhYzM2MzVhXkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Resident Evil 5</h4>
+        <button onclick="startQueue('Resident Evil 5')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://gameinformer.com/sites/default/files/styles/product_box_art/public/2021/05/05/5abda122/residentevil6.jpg.webp">
+      <div class="game-info">
+        <h4>Resident Evil 6</h4>
+        <button onclick="startQueue('Resident Evil 6')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/5/52/Assassin%27s_Creed.jpg">
+      <div class="game-info">
+        <h4>Assassins Creed 1</h4>
+        <button onclick="startQueue('Assassins Creed 1')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSU_Ztwgr2TVOEhKE2-2Xd7U-XiSxSHpjPw3w&s">
+      <div class="game-info">
+        <h4>Assassins Creed 2</h4>
+        <button onclick="startQueue('Assassins Creed 2')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/3ddd6a590da64e3686042d108968a6b2/EGS_GodofWar_SantaMonicaStudio_S2_1200x1600-fbdf3cbc2980749091d52751ffabb7b7_1200x1600-fbdf3cbc2980749091d52751ffabb7b7">
+      <div class="game-info">
+        <h4>God of War</h4>
+        <button onclick="startQueue('God of War')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/e/ee/God_of_War_Ragnar%C3%B6k_cover.jpg">
+      <div class="game-info">
+        <h4>God of War Ragnarok</h4>
+        <button onclick="startQueue('God of War Ragnarok')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/aa84ff464b9cf477df3a910d246deb0b/13037429">
+      <div class="game-info">
+        <h4>Stellar Blade</h4>
+        <button onclick="startQueue('Stellar Blade')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://cdn.cdkeys.com/media/catalog/product/t/o/tombraiderdefinitivesurvivortrilogy-steam.jpg">
+      <div class="game-info">
+        <h4>Tomb Raider (Trilogy)</h4>
+        <button onclick="startQueue('Tomb Raider (Trilogy)')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/5/54/Assassin%27s_Creed_Shadows_cover.png">
+      <div class="game-info">
+        <h4>Assassins Creed Shadows</h4>
+        <button onclick="startQueue('Assassins Creed Shadows')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/7/7b/Silent_Hill_f_cover_art.png">
+      <div class="game-info">
+        <h4>Silent Hill F</h4>
+        <button onclick="startQueue('Silent Hill F')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/c101b3cd6b1831640ee21dcc88fcf278.jpg">
+      <div class="game-info">
+        <h4>Assassins Creed Mirage</h4>
+        <button onclick="startQueue('Assassins Creed Mirage')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://s.pacn.ws/1/p/1b7/marvels-spiderman-2-849825.1.jpg?v=sr3aom">
+      <div class="game-info">
+        <h4>Marvel's Spider Man 2</h4>
+        <button onclick="startQueue('Marvel Spider-Man 2')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://data.xxlgamer.com/products/5406/sNQ6wSfyMwIlDI-big.jpg">
+      <div class="game-info">
+        <h4>Marvel's Spider-Man Remastered</h4>
+        <button onclick="startQueue('Marvel Spider-Man Remastered')">▶ Play</button>
+      </div>
+    </div>
+    
+    <div class="game">
+      <img src="https://e.snmc.io/lk/l/x/392726f7a0d028ae150f384e673349b7/11447319">
+      <div class="game-info">
+        <h4>Marvel's Spider-Man Miles Morales</h4>
+        <button onclick="startQueue('Spider-Man-Miles Morales')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://s.pacn.ws/1/p/10w/horizon-zero-dawn-complete-edition-664497.7.jpg?v=s1qd5a">
+      <div class="game-info">
+        <h4>Horizon Zero Dawn</h4>
+        <button onclick="startQueue('Horizon Zero Dawn')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://e.snmc.io/lk/l/x/8912e2018437d71d0d4974c8ebe02d96/11735409">
+      <div class="game-info">
+        <h4>Horizon Forbidden West</h4>
+        <button onclick="startQueue('Horizon Forbidden West')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/08/MetalGearSolidDelta.jpg/250px-MetalGearSolidDelta.jpg">
+      <div class="game-info">
+        <h4>METAL GEAR SOLID Δ: Snake Eater</h4>
+        <button onclick="startQueue('METAL GEAR SOLID Δ')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BMGQwMzA4ODctN2VjNi00NTk2LWE5NzItOWJlYmM3NWUyNjZjXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg">
+      <div class="game-info">
+        <h4>Until Dawn</h4>
+        <button onclick="startQueue('Until Dawn')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/4ec958d5e4b6429aadbc116cee0b6ea0/EGS_DeadSpace_MotiveStudio_S2_1200x1600-551c16d068cab45b02149e15a43c2413">
+      <div class="game-info">
+        <h4>Dead Space</h4>
+        <button onclick="startQueue('Dead Space')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://data.xxlgamer.com/products/5484/EHl0bDMifPkLPd-medium.jpg">
+      <div class="game-info">
+        <h4>The Last of Us PART 1</h4>
+        <button onclick="startQueue('The Last of Us PART 1')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/7713e3fa4b234e0d8f553044205d53b6/EGS_TheLastofUsPartIIRemastered_NaughtyDogLLCNixxesSoftwareIronGalaxy_S2_1200x1600-2e13755a6b3fec2ee9dbcc231a1cf39c">
+      <div class="game-info">
+        <h4>The Last of Us PART 2</h4>
+        <button onclick="startQueue('The Last of Us PART 2')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/4a9a809d2f064f35b589ac72ba7b3b65/11361626">
+      <div class="game-info">
+        <h4>Counter Strike 2</h4>
+        <button onclick="startQueue('Counter Strike 2')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BYjE3OGFkMmItZGMzOC00YmVjLWE5ZmYtNzcxMTk0OTY5NTU2XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Call of Duty Black Ops 6</h4>
+        <button onclick="startQueue('COD Black Ops 6')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://e.snmc.io/lk/g/x/72f985e228a8cdf14a07809d91b8867e/9217773">
+      <div class="game-info">
+        <h4>Elden Ring</h4>
+        <button onclick="startQueue('Elden Ring')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/b40b3d74e9100f060ddf999bbfe5d647/12818288">
+      <div class="game-info">
+        <h4>Elden Ring NIGHTRIEGN</h4>
+        <button onclick="startQueue('Elden Ring NIGHTRIEGN')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://data.xxlgamer.com/products/2605/NdDXBt8GhFvfEA-big.jpg">
+      <div class="game-info">
+        <h4>Assassins Creed Unity</h4>
+        <button onclick="startQueue('AC Unity')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/73f5c8a33a6bbaad6e8e79cfca9d0778/8904225">
+      <div class="game-info">
+        <h4>Days Gone</h4>
+        <button onclick="startQueue('Days Gone')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://data.xxlgamer.com/products/5444/2FrQyGEN4o6HKS-big.jpg">
+      <div class="game-info">
+        <h4>Uncharted Legacy of Thieves Collection</h4>
+        <button onclick="startQueue('Spider-Man Miles Morales')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://cdn.prgloo.com/media/c1cf8131a1684d0bb570844da611a5e4.jpg?width=1200&height=1800">
+      <div class="game-info">
+        <h4>NBA 2K26</h4>
+        <button onclick="startQueue('NBA 2K26')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://data.xxlgamer.com/products/6023/2aKaSMAPvA4rUp-big.jpg">
+      <div class="game-info">
+        <h4>Madden NFL 26</h4>
+        <button onclick="startQueue('NFL26')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://data.xxlgamer.com/products/5393/TbufBCr3yERidg-big.jpg">
+      <div class="game-info">
+        <h4>Stalker 2</h4>
+        <button onclick="startQueue('Stalker 2')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://store-images.s-microsoft.com/image/apps.16719.64366672042187759.733004ed-c696-44cf-98cc-30eddf2375a8.3dd6c96e-e0c3-4a0b-aeb0-810f815a6d37">
+      <div class="game-info">
+        <h4>Dead by Daylight</h4>
+        <button onclick="startQueue('Dead by Daylight')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BNWJmZThhMzktZjI4NC00OTdmLThmMjItNTcxNDdjNjU0YmM0XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Fortnite</h4>
+        <button onclick="startQueue('Fortnite')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://store-images.s-microsoft.com/image/apps.26610.66080721822734920.910bec42-dd7c-4bcf-9acb-d97e1b5501f0.5a916954-24f8-4f6e-95e7-74cff29199d9">
+      <div class="game-info">
+        <h4>Dead Island 2</h4>
+        <button onclick="startQueue('Dead Island 2')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://howlongtobeat.com/games/49483_Fallout_4_Game_of_the_Year_Edition.png">
+      <div class="game-info">
+        <h4>Fallout 4</h4>
+        <button onclick="startQueue('Fallout 4')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/hellebore/FC3_StorePortrait_1200x1600_1200x1600-98fcc6ac579301df097646fd622401f9">
+      <div class="game-info">
+        <h4>Far Cry 3</h4>
+        <button onclick="startQueue('Far Cry 3')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/cf87285950ba492bbdc370b9d265ea36/FC4_StorePortrait_1200x1600_1200x1600-7f366d878f5553dae499860243c537ee">
+      <div class="game-info">
+        <h4>Far Cry 4</h4>
+        <button onclick="startQueue('Far Cry 4')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/coriander/FCZ_StorePortrait_1200x1600_1200x1600-a254f505d277fe3dc17beb12416bf11a">
+      <div class="game-info">
+        <h4>Far Cry 5</h4>
+        <button onclick="startQueue('Far Cry 5')">▶ Play</button>
+      </div>
+    </div>
+    
+        <div class="game">
+      <img src="https://cdn1.epicgames.com/b4565296c22549e4830c13bc7506642d/offer/TETRA_PREORDER_STANDARD%20EDITION_EPIC_Store_Portrait_1200x1600-1200x1600-ca8b802ff13813c37a44ebf68d0946a2.png">
+      <div class="game-info">
+        <h4>Far Cry 6</h4>
+        <button onclick="startQueue('Far Cry 6')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/5aa6c553838492f970fbf5270fbd9061/9563329">
+      <div class="game-info">
+        <h4>Detroit Become Human</h4>
+        <button onclick="startQueue('Detroit Become Human')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co8o6i.jpg">
+      <div class="game-info">
+        <h4>Backrooms Escape Together</h4>
+        <button onclick="startQueue('Backrooms Multiplayer')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BMWYzZTI5ZmQtOTcwOS00YjllLTljOWMtOWE3YTQ4ZTc5MDI0XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg">
+      <div class="game-info">
+        <h4>Red Dead Redemption</h4>
+        <button onclick="startQueue('Red Dead Redemption')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://e.snmc.io/lk/l/x/7cc4596be37d6e13a97b38b30eedbbd7/13435602">
+      <div class="game-info">
+        <h4>Outer World 2</h4>
+        <button onclick="startQueue('Outer World 2')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/d1de872d7813caec52c4b6cd1f106d83/10651833">
+      <div class="game-info">
+        <h4>Hit Man World of Assassnation</h4>
+        <button onclick="startQueue('Hitman WoA')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://s.pacn.ws/1/p/15o/hogwarts-legacy-750293.7.jpg?v=s0lhil">
+      <div class="game-info">
+        <h4>Hogwarts Legacy</h4>
+        <button onclick="startQueue('Hogwarts Legacy')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/angelonia/WDA_StorePortrait_1200x1600_1200x1600-75d21fb44d647ad69967ae1bb0ab0cbc">
+      <div class="game-info">
+        <h4>Watch Dogs 2</h4>
+        <button onclick="startQueue('Watch Dogs 2')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/df827da31d664707840bc6c221f22d72.png">
+      <div class="game-info">
+        <h4>Watch Dogs 1</h4>
+        <button onclick="startQueue('Watch Dogs 1')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BMTA3N2Y1NjUtMmY4NS00NzU2LWI0ODUtZDYzYmM1ZmRiZTc3XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Watch Dogs Legion</h4>
+        <button onclick="startQueue('Watch Dogs Legion')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/thumb/4/40/Split_Fiction_cover_art.jpg/250px-Split_Fiction_cover_art.jpg">
+      <div class="game-info">
+        <h4>Split Fiction</h4>
+        <button onclick="startQueue('Split Fiction')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/0d/Mafia_II_Boxart.jpg/250px-Mafia_II_Boxart.jpg">
+      <div class="game-info">
+        <h4>Mafia 2 Definitive Edition</h4>
+        <button onclick="startQueue('Mafia 2')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://image.api.playstation.com/vulcan/ap/rnd/202006/1023/AgWIv9NHpkWc1vXdNYuSGI8p.jpg">
+      <div class="game-info">
+        <h4>Mafia Definitive Edition</h4>
+        <button onclick="startQueue('Mafia Definitive Edition')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://cdn1.epicgames.com/8ad9396e01f046aaa784a33f7e60dfbe/offer/EGS_MafiaIIIDefinitiveEdition_Hangar13_S2-1200x1600-5090188980551261df50e7897fe43f90.jpg">
+      <div class="game-info">
+        <h4>Mafia 3 Definitive Edition</h4>
+        <button onclick="startQueue('Mafia 3')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/2/2c/Resident_Evil_Village.png">
+      <div class="game-info">
+        <h4>Resident Evil Village</h4>
+        <button onclick="startQueue('Resident Evil Village')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://image.api.playstation.com/cdn/UP0102/CUSA04772_00/cxd9vkFOAHVwwYG7lQKENGkrfyoAChNh.png?w=440">
+      <div class="game-info">
+        <h4>Resident Evil Biohazard</h4>
+        <button onclick="startQueue('Resident Evil Biohazard')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BYzNjOWUxNjAtZTBhMi00ZjM3LTg5YWQtZTk1MzE5YjkzNTE2XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Mafia The Old Country</h4>
+        <button onclick="startQueue('Mafia: The Old Country')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BOGZlZmZmNjYtNWJkNy00MDY4LWI4ZWMtOGM2ZjVmYjM3M2ZlXkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Control</h4>
+        <button onclick="startQueue('Control')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/c4763f236d08423eb47b4c3008779c84/EGS_AlanWake2_RemedyEntertainment_S2_1200x1600-c7c8091ddac0f9669c8e5905bca88aaa">
+      <div class="game-info">
+        <h4>Alan Wake 2</h4>
+        <button onclick="startQueue('Alan Wake 2')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BYjgyMWQyMTAtMTcxOC00NTc0LTliZWEtMDFlYmUyMzJjYTI0XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Sleeping Dogs</h4>
+        <button onclick="startQueue('Sleeping Dogs')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BZDI0Y2EyMzUtZmY0MC00MTdhLWIwYzMtZTdiNjI4NDRlZWZhXkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Outlast 1</h4>
+        <button onclick="startQueue('Outlast')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/2180c4130c5ec7ff38c98927995377f1/8867015">
+      <div class="game-info">
+        <h4>Outlast 2</h4>
+        <button onclick="startQueue('Outlast 2')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://e.snmc.io/lk/l/x/961865f65af378e2b0e727def2d84163/11715099">
+      <div class="game-info">
+        <h4>Indiana Jones and the Great Circle</h4>
+        <button onclick="startQueue('Indiana Jones and the Great Circle')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://data.xxlgamer.com/products/5591/YRs8jAVLHNReRr-big.jpg">
+      <div class="game-info">
+        <h4>HELLDIVERS™ 2</h4>
+        <button onclick="startQueue('HELLDIVERS™ 2')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://static0.thegamerimages.com/wordpress/wp-content/uploads/sharedimages/2024/12/mixcollage-05-dec-2024-08-21-pm-1018.jpg?q=49&fit=contain&w=480&dpr=2">
+      <div class="game-info">
+        <h4>Star Wars Outlaw</h4>
+        <button onclick="startQueue('Star Wars Outlaw')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://cdn1.epicgames.com/spt-assets/330dace5ffc74156987f91d454ac544b/project-w-1vp1b.jpg">
+      <div class="game-info">
+        <h4>Clair Obscur: Expedition 33</h4>
+        <button onclick="startQueue('Clair Obscur: Expedition 33')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://data.xxlgamer.com/products/5641/4Om5Gqx3MpMzez-big.jpg">
+      <div class="game-info">
+        <h4>Ready or Not</h4>
+        <button onclick="startQueue('Read or Not')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BMzVhMGQyM2ItNTVkNi00NDZiLWFiMDMtMTQwOGE3NzQxZmM2XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Ghost of Tsushima</h4>
+        <button onclick="startQueue('Ghost of Tsushima')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BOTlmNDY5MTctZmQ4YS00MmEwLTgxNmItMDkwODIxYmExYTMyXkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Monster Hunter Wilds</h4>
+        <button onclick="startQueue('Monster Hunter Wilds')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/e9a679451d094c1ba3d008b6a01adec5/EGS_FINALFANTASYVIIREBIRTH_SquareEnix_S2_1200x1600-7708f856b86bea9ac254780e78deb3cf">
+      <div class="game-info">
+        <h4>Final Fantasy VII Rebirth</h4>
+        <button onclick="startQueue('Final Fantasy VII')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://i0.wp.com/gamershubpcstore.store/wp-content/uploads/2025/09/Untitled_design_17_bc66fe82-d43a-45c1-b6b8-af17ffae2912-1.png?fit=600%2C900&ssl=1">
+      <div class="game-info">
+        <h4>FC26</h4>
+        <button onclick="startQueue('FC26')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://e.snmc.io/lk/g/x/e767173b47e2d0f8c3dda1f01cd06913/11578144">
+      <div class="game-info">
+        <h4>Black Myth Wukong</h4>
+        <button onclick="startQueue('Black Myth Wukong')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://assetsio.gnwcdn.com/cob3bo.jpg?width=2048&height=2048&fit=bounds&quality=85&format=jpg&auto=webp">
+      <div class="game-info">
+        <h4>Resident Evil Requiem</h4>
+        <button onclick="startQueue(Resident Evil Requiem)">Coming soon..</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://images.launchbox-app.com/835a4acc-2708-4bf8-bbdf-61dbaa963f96.jpg">
+      <div class="game-info">
+        <h4>Death Stranding Director Cut</h4>
+        <button onclick="startQueue('Death Stranding')">▶ Play</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://howlongtobeat.com/games/37366_Roblox.png">
+      <div class="game-info">
+        <h4>Roblox</h4>
+        <button onclick="startQueue('Roblox')">▶ Play</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://assets.gam3s.gg/1753290137965_wuthering_waves_cover_fa3ac6c9f5.png">
+      <div class="game-info">
+        <h4>Wuthering Waves</h4>
+        <button onclick="startQueue('Wuthering Waves')">▶ Play</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/4b8241e523ea34722cfc3b62bd0c932e.png">
+      <div class="game-info">
+        <h4>Clouddy PC</h4>
+        <button onclick="startQueue(CloudPC)">❌ Under Maintenance</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/5/5b/Mortal_Kombat_1_key_art.jpeg">
+      <div class="game-info">
+        <h4>Mortal Kombat 1</h4>
+        <button onclick="startQueue('Mortal Kombat')">▶ Play</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/dcda670233b4bd95991180c6bcc751c9/11612571">
+      <div class="game-info">
+        <h4>Senua's Saga: Hellblade II </h4>
+        <button onclick="startQueue('Senua's Saga: Hellblade II ')">▶ Play</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://cdn1.epicgames.com/spt-assets/9e8b37541e614575b4de303d2c2e44cf/arc-raiders-1hls0.jpg">
+      <div class="game-info">
+        <h4>ARC Raiders</h4>
+        <button onclick="startQueue('ARC Raiders')">▶ Play</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://e.snmc.io/lk/l/x/c2c5746f6488c6e8a0dffabe520f40dc/13724072">
+      <div class="game-info">
+        <h4>Hollow Knight: Silk Song</h4>
+        <button onclick="startQueue('Hollow Knight: Silk Song')">▶ Play</button>
+      </div>
+    </div>
+    
+                        <div class="game">
+      <img src="https://data.xxlgamer.com/products/4252/qATiGpJ2bh09GJ-big.jpg">
+      <div class="game-info">
+        <h4>Hollow Knight</h4>
+        <button onclick="startQueue('Hollow Knight')">▶ Play</button>
+      </div>
+    </div>
+    
+                        <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/50bf9593b0d54f80da18612e5a2136db.jpg">
+      <div class="game-info">
+        <h4>Clash Royale</h4>
+        <button onclick="startQueue('Clash Royale')">▶ Play</button>
+      </div>
+    </div>
+    
+                        <div class="game">
+      <img src="https://data.xxlgamer.com/products/5142/DGslpxgzt6Q7HO-big.jpg">
+      <div class="game-info">
+        <h4>Phasmophobia</h4>
+        <button onclick="startQueue('Phasmophobia')">▶ Play</button>
+      </div>
+    </div>
+    
+                        <div class="game">
+      <img src="https://data.xxlgamer.com/products/5540/qZRNDpaKnIpUJH-big.jpg">
+      <div class="game-info">
+        <h4>Lies of P</h4>
+        <button onclick="startQueue('Lies of P')">▶ Play</button>
+      </div>
+    </div>
+    
+                        <div class="game">
+      <img src="https://assets.altarofgaming.com/wp-content/uploads/2023/09/call-of-duty-modern-warfare-iii-game-poster-altar-of-gaming.jpg">
+      <div class="game-info">
+        <h4>Call of Duty®: Modern Warfare® III</h4>
+        <button onclick="startQueue('Call of Duty®: Modern Warfare® III')">▶ Play</button>
+      </div>
+    </div>
+    
+                            <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BYmM2MzY2NGEtOGNhNS00MzM1LTg3MGEtZTRkYjBkNzdjYzk5XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Call of Duty®: Modern Warfare® II</h4>
+        <button onclick="startQueue('Call of Duty®: Modern Warfare® II')">▶ Play</button>
+      </div>
+    </div>
+    
+                            <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BOTAyMWRkMjQtZDQ0NS00YTkzLWE1NjItZjk5ZjA0NDAxYzY3XkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Call of Duty®: World War II</h4>
+        <button onclick="startQueue('Call of Duty®: World War II')">▶ Play</button>
+      </div>
+    </div>
+    
+                            <div class="game">
+      <img src="https://cdn.prgloo.com/media/cd9d8be113b9428da05a5da3ca46009d.jpg?width=1200&height=1800">
+      <div class="game-info">
+        <h4>WWE 2K25</h4>
+        <button onclick="startQueue('WWE 2K25')">▶ Play</button>
+      </div>
+    </div>
+    
+                            <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BYzJiNTQwNWMtNzhmNi00MjFiLWE1OTctNjZmMGYwODEwNWIwXkEyXkFqcGc@._V1_.jpg">
+      <div class="game-info">
+        <h4>Stray</h4>
+        <button onclick="startQueue('Stray')">▶ Play</button>
+      </div>
+    </div>
+    
+                            <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/a7d0b8124a549b9e8ec940f512f254a3/12693069">
+      <div class="game-info">
+        <h4>Inzoi</h4>
+        <button onclick="startQueue('Inzoi')">▶ Play</button>
+      </div>
+    </div>
+    
+<div class="game">
+  <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2231380/library_600x900_2x.jpg?t=1764778328" alt="Tom Clancy's Ghost Recon® Breakpoint">
+  <div class="game-info">
+    <h4>Tom Clancy's Ghost Recon® Breakpoint</h4>
+    <button onclick="startQueue('Tom Clancy\'s Ghost Recon® Breakpoint')">▶ Play</button>
+  </div>
+</div>
+    
+                         <div class="game">
+      <img src="https://data.xxlgamer.com/products/5679/5udjsAZQ3p4MO4-big.jpg">
+      <div class="game-info">
+        <h4>Kingdom Deliverance II</h4>
+        <button onclick="startQueue('Kingdom Deliverance II')">▶ Play</button>
+      </div>
+    </div>
+    
+                            <div class="game">
+      <img src="https://e.snmc.io/lk/l/x/cfe26d98cac16e9a7742206a4b7507bf/12885394">
+      <div class="game-info">
+        <h4>Kingdom Deliverance</h4>
+        <button onclick="startQueue('Kingdom Deliverance')">▶ Play</button>
+      </div>
+    </div>
+    
+                            <div class="game">
+      <img src="https://s.pacn.ws/1/p/1c4/the-elder-scrolls-iv-oblivion-remastered-866277.7.jpg?v=svm5oa">
+      <div class="game-info">
+        <h4>The Elder Scrolls IV: Oblivion Remastered</h4>
+        <button onclick="startQueue('The Elder Scrolls IV: Oblivion Remastered')">▶ Play</button>
+      </div>
+    </div>
+    
+                            <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/8a560fbb9ef5b869fcacb69b05f40b26/9263497">
+      <div class="game-info">
+        <h4>Forza Horizon 5</h4>
+        <button onclick="startQueue('Forza Horizon 5')">▶ Play</button>
+      </div>
+    </div>
+    
+                                <div class="game">
+      <img src="https://assets1.ignimgs.com/2013/11/22/batman-arkham-collection-generaljpg-8856a5.jpg?crop=1%3A1%2Csmart&format=jpg&auto=webp&quality=80">
+      <div class="game-info">
+        <h4>Batman Arkham Collection</h4>
+        <button onclick="startQueue('Batman Arkham Collection')">▶ Play</button>
+      </div>
+    </div>
+    
+                                <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/a1e19f4b3b361936e8f079cb77c7edd4.png">
+      <div class="game-info">
+        <h4>Black Desert</h4>
+        <button onclick="startQueue('Black Desert')">▶ Play</button>
+      </div>
+    </div>
+    
+                                    <div class="game">
+      <img src="https://images.purexbox.com/ffc8a88799ec6/sniper-elite-resistance-cover.cover_large.jpg">
+      <div class="game-info">
+        <h4>Sniper Elite: Resistance</h4>
+        <button onclick="startQueue('Sniper Elite: Resistance')">▶ Play</button>
+      </div>
+    </div>
+    
+                                    <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/629ec90c670052a511fd2ff8334e4f05.png">
+      <div class="game-info">
+        <h4>The First Descendant</h4>
+        <button onclick="startQueue('The First Descendant')">▶ Play</button>
+      </div>
+    </div>
+    
+                                    <div class="game">
+      <img src="https://e.snmc.io/lk/f/x/911aec04434fdf80bf5d6f87137f29d4/13209395">
+      <div class="game-info">
+        <h4>R.E.P.O.</h4>
+        <button onclick="startQueue('R.E.P.O.')">▶ Play</button>
+      </div>
+    </div>
+    
+                                    <div class="game">
+      <img src="https://steamdeckhq.com/wp-content/uploads/2025/05/DOOMTheDarkAgesGrid.jpg">
+      <div class="game-info">
+        <h4>DOOM: The Dark Ages</h4>
+        <button onclick="startQueue('DOOM: The Dark Ages')">▶ Play</button>
+      </div>
+    </div>
+    
+                                    <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/aa598567414d42378187b8861da550f7/EGS_RemnantII_GunfireGames_S2_1200x1600-3365edad94b9306bc1e275bc7f4dd7d5">
+      <div class="game-info">
+        <h4>REMNANT II®</h4>
+        <button onclick="startQueue('REMNANT II®')">▶ Play</button>
+      </div>
+    </div>
+    
+<div class="game">
+  <img src="https://cdn2.steamgriddb.com/grid/aaf4b029f0471bef043a16b06c2016d5.png" alt="Assassin's Creed Syndicate">
+  <div class="game-info">
+    <h4>Assassin's Creed Syndicate</h4>
+    <button onclick="startQueue('Assassin\'s Creed Syndicate')">▶ Play</button>
+  </div>
+</div>
+    
+                        <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/f0ce59b6bf8e03499c788c348919a196.jpg">
+      <div class="game-info">
+        <h4>Assassin's Creed III Remastered</h4>
+        <button onclick="startQueue('Assassins Creed III')">▶ Play</button>
+      </div>
+    </div>
+    
+<div class="game">
+  <img src="https://data.xxlgamer.com/products/1415/hUnh76n6sMO0YS-big.jpg" alt="Assassin's Creed IV Black Flag">
+  <div class="game-info">
+    <h4>Assassin's Creed IV Black Flag</h4>
+    <button onclick="startQueue('Assassin\'s Creed IV Black Flag')">▶ Play</button>
+  </div>
+</div>
+    
+                        <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/01ce8179d15b7b9ceeaaf647bbfdd3d8.jpg">
+      <div class="game-info">
+        <h4>Dead Island Definitive Edition</h4>
+        <button onclick="startQueue('Dead Island')">▶ Play</button>
+      </div>
+    </div>
+    
+                        <div class="game">
+      <img src="https://cdn2.steamgriddb.com/grid/13816ba0dd3a36209cbc3cfef265dc7c.png">
+      <div class="game-info">
+        <h4>PUBG Battlegrounds</h4>
+        <button onclick="startQueue('PUBG Battlegrounds')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://royalcdkeys.com/cdn/shop/files/Battlefield_6.webp?v=1754586074">
+      <div class="game-info">
+        <h4>Battlefield 6</h4>
+        <button onclick="startQueue('Battlefield 6')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://assets.gam3s.gg/1752153837786_valorant_cover_c76a783a94.png">
+      <div class="game-info">
+        <h4>Valorant<h4>
+        <button onclick="startQueue('Valorant')">▶ Play</button>
+       </div>
+    </div>       
+    
+            <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/3/33/Dispatch_game_poster.jpg">
+      <div class="game-info">
+        <h4>Dispatch</h4>
+        <button onclick="startQueue('Dispatch')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://s.pacn.ws/1/p/rf/rust-incl-early-access-493675.8.jpg?v=s93jna">
+      <div class="game-info">
+        <h4>Rust</h4>
+        <button onclick="startQueue('Rust')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://bg3.wiki/w/images/thumb/8/89/Baldur%27s_Gate_3_Cover_Art.webp/600px-Baldur%27s_Gate_3_Cover_Art.webp.png">
+      <div class="game-info">
+        <h4>Bladur's Gate 3</h4>
+        <button onclick="startQueue('Bladur's Gate 3)">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://media-rockstargames-com.akamaized.net/tina-uploads/posts/25ak3481oa1384/ed2298a807de6b0836667036d53035b2362fdf07.jpg">
+      <div class="game-info">
+        <h4>GTA Definitive Edition</h4>
+        <button onclick="startQueue('GTA remastered')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://m.media-amazon.com/images/M/MV5BMDQ5NzQwNTgtMWEzNy00ZGZhLWIzMjctYjE1MDU3ZjZkY2IwXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg">
+      <div class="game-info">
+        <h4>Tainted Grail: The Fall of Avalon</h4>
+        <button onclick="startQueue('Tainted Grail: The Fall of Avalon')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://store-images.s-microsoft.com/image/apps.13367.14415742612829493.1297136a-f273-41f1-947f-59044c848c55.5b67a38e-b742-4dce-a884-4e2878d50c54">
+      <div class="game-info">
+        <h4>Halo: The Master Chief Collection</h4>
+        <button onclick="startQueue('Halo: The Master Chief Collection')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/20/7_Days_To_Die_cover_art.jpg/250px-7_Days_To_Die_cover_art.jpg">
+      <div class="game-info">
+        <h4>7 Days to Die</h4>
+        <button onclick="startQueue('7 Days to Die')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/a/a2/Sniper_Elite_III_cover_art.jpg">
+      <div class="game-info">
+        <h4>Sniper Elite 3</h4>
+        <button onclick="startQueue('Sniper Elite 3')">▶ Play</button>
+      </div>
+    </div>
+    
+            <div class="game">
+      <img src="https://upload.wikimedia.org/wikipedia/en/9/90/Sniper_Elite_4_cover_art.jpg">
+      <div class="game-info">
+        <h4>Sniper Elite 4</h4>
+        <button onclick="startQueue('Sniper Elite 4')">▶ Play</button>
+      </div>
+    </div>
+    
+                <div class="game">
+      <img src="https://cdn1.epicgames.com/offer/18ad196e381b4331bf856e71a85ee0df/EGS_SniperElite5CompleteEdition_Rebellion_Editions_S2_1200x1600-0ba5fc21565b4aec7b9071166058210b">
+      <div class="game-info">
+        <h4>Sniper Elite 5</h4>
+        <button onclick="startQueue('Fallout 5')">▶ Play</button>
+      </div>
+    </div>
+    
+                    <div class="game">
+      <img src="https://png.pngtree.com/png-vector/20220608/ourmid/pngtree-sensitive-content-crossed-eye-on-blur-background-png-image_4900076.png">
+      <div class="game-info">
+        <h4>Adult Games (Nudity)</h4>
+        <button onclick="startQueue(noo)">🔒Locked</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="note">
+  UI demo only — not a real cloud gaming service
+</div>
+
+<!-- Loader overlay -->
+<div id="loader-overlay">
+  <div class="spinner">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+  <div id="queue-text">Connecting...</div>
+  <div id="server-info" style="margin-top:10px; font-size:16px; color:#ccc;"></div>
+</div>
+
+<script>
+// QUEUE SIMULATION
+function startQueue(gameName){
+  const overlay = document.getElementById('loader-overlay');
+  const queueText = document.getElementById('queue-text');
+  const serverInfo = document.getElementById('server-info');
+  overlay.style.display = 'flex';
+  queueText.textContent = `Preparing "${gameName}"...`;
+  serverInfo.textContent = '';
+  setTimeout(()=>{
+    const regions = ['US-East','US-West','Europe','Asia'];
+    const region = regions[Math.floor(Math.random()*regions.length)];
+    const ping = Math.floor(Math.random()*60)+20;
+    const gamersAhead = Math.floor(Math.random()*10)+1;
+    queueText.textContent = `Gamers ahead of you: ${gamersAhead}`;
+    serverInfo.textContent = `Server: ${region} • Ping: ${ping}ms`;
+    setTimeout(()=>{
+      queueText.textContent = `"${gameName}" is now ready! Enjoy your game.`;
+      serverInfo.textContent = `Server: ${region} • Ping: ${ping}ms`;
+    },100000);
+  },5000);
+}
+
+// GENRES UNDERLINE
+const categories = document.querySelectorAll('.category');
+const underline = document.querySelector('.underline');
+
+function moveUnderline(el){
+  underline.style.width = el.offsetWidth+'px';
+  underline.style.left = el.offsetLeft+'px';
+}
+
+// default active
+categories[0].style.background='white';
+categories[0].style.color='#333';
+moveUnderline(categories[0]);
+
+categories.forEach(cat=>{
+  cat.addEventListener('click', ()=>{
+    categories.forEach(c=>{
+      c.style.background='#333';
+      c.style.color='white';
+    });
+    cat.style.background='white';
+    cat.style.color='#333';
+    moveUnderline(cat);
+  });
+});
+
+// SEARCH FILTER
+const searchInput = document.querySelector('.search');
+const games = document.querySelectorAll('.game');
+
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.toLowerCase();
+  games.forEach(game => {
+    const name = game.querySelector('h4').textContent.toLowerCase();
+    game.style.display = name.includes(query) ? 'block' : 'none';
+  });
+});
+
+// SCROLL REVEAL
+function scrollReveal() {
+  const elements = document.querySelectorAll('.featured, .categories, section, .game');
+  const windowBottom = window.innerHeight + window.scrollY;
+
+  elements.forEach(el => {
+    if(el.offsetTop < windowBottom - 50){ // 50px before appearing
+      el.classList.add('visible');
+    }
+  });
+}
+window.addEventListener('scroll', scrollReveal);
+window.addEventListener('load', scrollReveal);
+</script>
+
+</body>
+</html>
